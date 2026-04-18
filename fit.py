@@ -15,13 +15,8 @@ val_set = np.array(val_set)
 validation_set = np.array(validation_set)
 validation_set = np.concatenate([val_set,validation_set])
 
-# training_set, validation_set = make_validation_set(data_list)
 training_data = MRIdataset(training_set)
-validation_data = MRIdataset(validation_set,validation = True)
-
-# weights = [d["weight"] for d in training_set]
-
-# sampler = WeightedRandomSampler(weights=weights,num_samples=(len(weights)),replacement=True)
+validation_data = MRIdataset(validation_set)
 
 training_loader = DataLoader(training_data,batch_size=1,shuffle=True,num_workers=4,pin_memory=True)
 validation_loader = DataLoader(validation_data,batch_size=1,shuffle=False,num_workers=4,pin_memory=True)
@@ -89,22 +84,27 @@ for epoch in range(epochs):
             val_loss += loss.item()
 
             probs = torch.softmax(output,dim=1)
-
             all_outputs.append(probs.cpu())
             all_labels.append(label.cpu())
 
-    all_outputs = torch.cat(all_outputs)
-    all_labels = torch.cat(all_labels)
-    micro_auc = roc_auc_score(all_labels.numpy(),all_outputs.numpy(),multi_class="ovr",average="micro")
+    all_outputs = torch.cat(all_outputs).numpy()
+    all_labels = torch.cat(all_labels).numpy()
+
+    val_auc = roc_auc_score(all_labels,all_outputs,multi_class="ovr",average="micro")
+
+    if val_auc > best_auc:
+        best_auc = val_auc
+        torch.save(model.state_dict(),"checkpoints/model8.pth")
+        iteration = epoch
     
     val_losses.append(val_loss / len(validation_loader))
     training_losses.append(total_loss / len(training_loader))
 
-    if micro_auc > best_auc:
-        best_auc = micro_auc
-        torch.save(model.state_dict(),"checkpoints/model6.pth")
+    # if val_loss / len(validation_loader) < best_val_loss:
+    #     best_val_loss = val_loss / len(validation_loader)
+    #     torch.save(model.state_dict(),"checkpoints/model6.pth")
 
-torch.save({"train_losses":training_losses,"val_losses":val_losses},"checkpoints/losses.pth")
+torch.save({"train_losses":training_losses,"val_losses":val_losses,"iteration":iteration},"checkpoints/losses.pth")
 
 
 
