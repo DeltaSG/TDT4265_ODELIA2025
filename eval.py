@@ -1,5 +1,5 @@
 import torch
-from model import ResNet18
+from model import ResNet18,DenseNet121
 import nibabel as nib
 from data import collect_data,collect_test_data,test_transforms
 import numpy as np
@@ -7,8 +7,10 @@ import pandas as pd
 
 device = torch.device("cpu")
 
-model = ResNet18(num_classes=3).to(device)
-model.load_state_dict(torch.load("checkpoints/model6.pth", map_location=device))
+# model = ResNet18(num_classes=3).to(device)
+model = DenseNet121(num_classes=3,growth_rate=16).to(device)
+
+model.load_state_dict(torch.load("checkpoints/model12.pth", map_location=device))
 
 data_list = collect_test_data()
 result = []

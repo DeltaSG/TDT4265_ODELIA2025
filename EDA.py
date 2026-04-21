@@ -143,7 +143,6 @@ plt.legend(title="Channel")
 plt.savefig("plots/intensity")
 plt.close()
 
-# tell antall forekomster per kombinasjon
 df_counts = df.groupby(["Hospital", "channel"]).size().reset_index(name="Count")
 
 plt.figure(figsize=(10, 5))

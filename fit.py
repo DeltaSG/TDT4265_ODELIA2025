@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import nibabel as nib
-from model import ResNet18
+from model import ResNet18,DenseNet121
 from data import MRIdataset, collect_data, make_validation_set
 from torch.utils.data import DataLoader, WeightedRandomSampler
 import numpy as np
@@ -16,15 +15,16 @@ validation_set = np.array(validation_set)
 validation_set = np.concatenate([val_set,validation_set])
 
 training_data = MRIdataset(training_set)
-validation_data = MRIdataset(validation_set)
+validation_data = MRIdataset(validation_set,validation=True)
 
-training_loader = DataLoader(training_data,batch_size=1,shuffle=True,num_workers=4,pin_memory=True)
-validation_loader = DataLoader(validation_data,batch_size=1,shuffle=False,num_workers=4,pin_memory=True)
+training_loader = DataLoader(training_data,batch_size=1,shuffle=True,num_workers=8,pin_memory=True)
+validation_loader = DataLoader(validation_data,batch_size=1,shuffle=False,num_workers=8,pin_memory=True)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = ResNet18(num_classes=3).to(device)
-criterion = nn.CrossEntropyLoss()
+# model = ResNet18(num_classes=3).to(device)
+model = DenseNet121(num_classes=3,growth_rate=16).to(device)
+criterion = nn.CrossEntropyLoss(weight=torch.tensor([1/300,1/40,1/80]))
 optimizer = torch.optim.Adam(model.parameters(),lr=1e-4,weight_decay=1e-5)
 epochs = 50
 
@@ -94,7 +94,7 @@ for epoch in range(epochs):
 
     if val_auc > best_auc:
         best_auc = val_auc
-        torch.save(model.state_dict(),"checkpoints/model8.pth")
+        torch.save(model.state_dict(),"checkpoints/model12.pth")
         iteration = epoch
     
     val_losses.append(val_loss / len(validation_loader))

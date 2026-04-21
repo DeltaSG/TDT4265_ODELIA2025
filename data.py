@@ -17,19 +17,21 @@ from monai.transforms import (
     ScaleIntensityRangePercentiles
 )
 
+# ALL data augmentations tried
 train_transforms = Compose([
-    ScaleIntensityRangePercentiles(1,99,0,1,clip=True),
-    RandBiasField(coeff_range=(0.0,0.2),prob=0.4),
-    RandScaleIntensity(factors=0.15,prob=0.5),
-    RandAdjustContrast(gamma=(0.8,1.2),prob=0.5),
-    RandGaussianNoise(mean=0.0,std=0.03,prob=0.3),
-    RandAffine(prob=0.5,rotate_range=(0.1,0.1,0.1),scale_range=(0.1,0.1,0.1),translate_range=(10,10,5),padding_mode="border"),
-    RandFlip(spatial_axis=0,prob=0.5),
+    # ScaleIntensityRangePercentiles(0.5,99.5,0,1,channel_wise=True),
+    # RandBiasField(coeff_range=(0.0,0.2),prob=0.4),
+    # RandScaleIntensity(factors=0.15,prob=0.5),
+    # RandAdjustContrast(gamma=(0.8,1.2),prob=0.5),
+    # RandGaussianNoise(mean=0.0,std=0.03,prob=0.3),
+    # RandAffine(prob=0.5,rotate_range=(0.1,0.1,0.1),scale_range=(0.1,0.1,0.1),translate_range=(10,10,5),padding_mode="border"),
+    # RandFlip(spatial_axis=0,prob=0.5),
     NormalizeIntensity(nonzero=False,channel_wise = True)
 ])
 
 test_transforms = Compose([NormalizeIntensity(nonzero=False,channel_wise = True)])
 
+#Creates a dictionary for all datapoints including paths to all 3D volumes, label, uid and which center the datapoint belong to.
 def collect_data(centers = ["CAM","MHA","RUMC","UKA"]):
 
     data_list = []
@@ -54,6 +56,7 @@ def collect_data(centers = ["CAM","MHA","RUMC","UKA"]):
 
     return data_list
 
+# Class created in order for dataloader to create batches and feed them to the neural networks.
 class MRIdataset():
     def __init__(self,data_list,validation = False):
         self.data_list = data_list
@@ -74,10 +77,14 @@ class MRIdataset():
 
         image = torch.tensor(image,dtype=torch.float32)
         label = torch.tensor(sample["label"],dtype=torch.long)
-        image = train_transforms(image)
+        if self.validation == False:
+            image = train_transforms(image)
+        else:
+            image = test_transforms(image)
 
         return image, label
 
+# Creates dictionaries for each datapoint in test dataset, containing paths to all images and uid.
 def collect_test_data():
 
     data_list = []
@@ -92,6 +99,7 @@ def collect_test_data():
         ],"uid":file.name})
     return data_list
 
+# Splits the training dataset into a smaller training dataset and a validation dataset.
 def make_validation_set(data_set):
     length = len(data_set)
     data_set = np.array(data_set)
